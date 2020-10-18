@@ -1,0 +1,25 @@
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<html style = "background-color:#89cff0">
+
+<body style = "margin:0;font-family: Arial;background-color:#89cff0">
+<div class="topnav" style = "overflow: hidden; background-color: #13294B;">
+  <a href="" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">Search Engine Index Page</a>
+  <a href="/folder" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;"> Go to Folder View &#8658;</a>
+    <div class="topnav-right" style = "float: right;">
+    <a style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">October 15<sup>th</sup>, 2020</a>
+  </div>
+</div>
+
+<div class="box" style = "width: 100%; text-align:center; top:50%; position:absolute;">
+  <div class='container'>
+    <form action="{% url 'search_results' %}" method="get" name = 'search'>
+      <input name="q" type="text" placeholder="Search..." style="width: 500px; height: 50px; border-radius: 15px; font-size:18px; margin: 3px" > <br>
+      <input name="f" type="text" placeholder="Optional Filter..." style="width: 500px; height: 50px; border-radius: 15px; font-size:18px margin: 3px" > <br>
+      <!-- <input class = "btn btn-success" type="submit" name = "Search" style="height: 50px; width: 500px; font-size:18px; margin: 3px"> -->
+      <button class="btn btn-success" href = '/search' name = 'l' type="submit" style="height: 50px; width: 500px; font-size:18px; margin: 3px">Search</button>
+    </form>
+  </div>
+  </html>
+</div>

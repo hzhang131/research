@@ -1,0 +1,97 @@
+<!-- <head>
+  <base href="http://localhost:8000" target="">
+</head> -->
+
+
+<body style = "margin:0;font-family: Arial;background-color:#89cff0;">
+<div class="topnav" style = "overflow: hidden; background-color: #13294B;position: sticky; top: 0; width:100%;">
+  <a href="http://localhost:8000" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">&#8656; Back to Index Page</a>
+  <a href="/cached" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;"> Go to List View &#8658;</a>
+    <div class="topnav-right" style = "float: right;">
+    <a style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">October 15<sup>th</sup>, 2020</a>
+  </div>
+</div>
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v3.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<!-- <div id="my_dataviz"></div> -->
+
+<script>
+  const w  = window.innerWidth || document.documentElement.clientWidth ||
+  document.body.clientWidth;
+  const h = window.innerHeight|| document.documentElement.clientHeight||
+  document.body.clientHeight;
+
+
+
+  d3.json("http://127.0.0.1:8887/network.json", function(err, dataset){
+    console.log(dataset)
+    var force = d3.layout.force()
+                .nodes(dataset.nodes)
+                .links(dataset.edges)
+                .size([w, h])
+                .linkDistance([100])
+                .charge([-300])
+                .start();
+
+    var colors = d3.scale.category10();
+    var svg = d3.select("body")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+    var edges = svg.selectAll("line")
+            .data(dataset.edges)
+            .enter()
+            .append("line")
+            .style("stroke", "#ccc")
+            .style("stroke-width", 1);
+    var nodes = svg.selectAll("circle")
+            .data(dataset.nodes)
+            .enter()
+            .append("circle")
+            .attr("r", 20)
+            .style("fill", function(d){
+              if (d.type == "Article"){
+                return "#00a";
+              }
+              else if (d.type == 'Keyword'){
+                return "#7f00ff";
+              }
+              else {
+                return "#a00";
+              }
+             })
+            .call(force.drag);
+
+    var label = svg.selectAll(".mytext")
+            .data(dataset.nodes)
+            .enter()
+            .append("text")
+              .text(function (d) { return d.name; })
+              .style("text-anchor", "middle")
+              .style("fill", "#fff")
+              .style("font-family", "Arial")
+              .style("font-size", 12);
+
+
+
+    force.on("tick", function(){
+      edges.attr("x1", function(d){ return d.source.x; })
+         .attr("y1", function(d){ return d.source.y; })
+         .attr("x2", function(d){ return d.target.x; })
+         .attr("y2", function(d){ return d.target.y; });
+      nodes.attr("cx", function(d){ return d.x; })
+         .attr("cy", function(d){ return d.y; });
+      label.attr("x", function(d){ return d.x; })
+           .attr("y", function (d) {return d.y; });
+
+
+    });
+  });
+
+</script>

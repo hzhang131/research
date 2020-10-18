@@ -1,0 +1,96 @@
+<head>
+  <base href="http://localhost:8000" target="">
+</head>
+
+
+<body style = "margin:0;font-family: Arial;background-color:#89cff0;">
+<div class="topnav" style = "overflow: hidden; background-color: #13294B;position: sticky; top: 0; width:100%;">
+  <a href="" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">&#8656; Back to Index Page</a>
+  <a href="/nodes" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;"> Go to Network View &#8658;</a>
+  <a href="/folder" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;"> Go to Folder View &#8658;</a>
+    <div class="topnav-right" style = "float: right;">
+    <a style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">October 15<sup>th</sup>, 2020</a>
+  </div>
+</div>
+<!-- <div class="topnav" style = "background-color: #333; overflow: hidden;">
+  <a href="" style = "font-family: Arial; background-color: #5CAF50; float: left; color: #f2f2f2; text-align: center; padding: 17px 17px; text-decoration: none; font-size: 17px;"> &#x21E6; Back to Search Page</a>
+  <div class="topnav-right" style = "float:right;">
+      <a href="" style = "font-family: Arial; background-color: #5CAF50; float: left; color: #f2f2f2; text-align: center; padding: 17px 17px; text-decoration: none; font-size: 17px;"> Back to Search Page </a>
+  </div>
+</div> -->
+<div style="width:100%;">
+  <div style="width:45%; float:left;">
+  <ul>
+    <p style="font-family: Arial;"> Here are some relevant search results: </p>
+    {% for article in object_list %}
+      {% if article.categories == "Article" %}
+    <li style="font-family: Arial;">
+      <p> <b> {{ article.title }} </b> </p>
+      <!-- <br> -->
+      {% autoescape off %}
+      <p> {{ article.abstract }} </p>
+      {% endautoescape %}
+    </li>
+      {% endif %}
+    {% endfor %}
+      <!-- <br> -->
+    </ul>
+  </div>
+
+  <div style="width:45%; float:right;">
+    <ul>
+      <p style="font-family: Arial;"> You might also be interested in: </p>
+      {% for article in object_list %}
+        {% if article.categories == "Related" %}
+      <li style="font-family: Arial;">
+        <p> <b> {{ article.title }}  from {{ article.submitter }}</b> </p>
+        <p> <b> Scored  {{ article.update_date }} points </b> </p>
+        <!-- <br> -->
+        {% autoescape off %}
+        <p> {{ article.abstract }} </p>
+        {% endautoescape %}
+      </li>
+        {% endif %}
+      {% endfor %}
+        <!-- <br> -->
+      </ul>
+    </div>
+</div>
+<div style="clear: both;"></div>
+
+<div class="vl" style = "border-left: 10px solid #13294B; height: 800px; position: absolute; left: 50%; margin-left: -3px; top: 6.5%; position: fixed"></div>
+<div class="vl" style = "border-left: 10px solid #13294B; height: 800px; position: absolute; left: 50%; margin-left: -3px; top: 6.5%; position: fixed"></div>
+
+<!-- <ul>
+  <p style="font-family: Arial;"> Here are some relevant search results: </p>
+  {% for article in object_list %}
+    {% if article.categories == "Article" %}
+  <li style="font-family: Arial;">
+    Title: {{ article.title }}
+    <br>
+    {% autoescape off %}
+    Abstract: {{ article.abstract }}
+    {% endautoescape %}
+  </li>
+    {% endif %}
+  {% endfor %}
+    <br>
+
+
+  <p style="font-family: Arial;"> You might also be interested in: </p>
+  {% for article in object_list %}
+  {% if article.categories == "Related" %}
+    <li style="font-family: Arial;">
+      Title: {{ article.title }}
+      <br>
+      {% autoescape off %}
+      Abstract: {{ article.abstract }}
+      {% endautoescape %}
+    </li>
+    <br>
+  {% endif %}
+  {% endfor %}
+
+
+</ul> -->
+</body>
