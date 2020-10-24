@@ -30,6 +30,7 @@ from elasticsearch_dsl import Index, Search
 from py2neo import Graph
 from time import sleep
 import json
+import networkx as nx
 es = Elasticsearch()
 register = template.Library()
 
@@ -46,10 +47,36 @@ class SRCView(ListView):
 def process(request):
     ''' internal url, hidden from public'''
     if request.method == 'POST':
-        print('here')
-        string = "\"{% static \"/text/" + request.POST['title'] + ".txt\" %}\""
         # split string in javascript.
-        return HttpResponse(string)
+        start = time.time()
+        G = nx.Graph()
+        graph = Graph("bolt://localhost:11005", auth=("neo4j", "230804"))
+        key = 'C++'
+        string = f'match (a:Article) - [:in] -> (c:Category)\
+        - [:consists] -> (e:Article) where \
+        a.title = "{key}" and a.title <> e.title return a.title, e.title'
+
+        tbl = graph.run(string).to_table()
+
+        tbl = np.array(tbl)
+        tbl, indices = np.unique(tbl, return_index=True, axis =0)
+        indices = 0
+        for row in tbl:
+            G.add_edge(row[0], row[1], weight = 3)
+            G.add_edge(row[1], row[0], weight = 2)
+            
+        u = tbl[:,1]
+
+        string = f'match (a:Article) - [:see_also] -> (b:Article) where a.title in {str(list(u))} return a.title, b.title'
+        tbl = graph.run(string).to_table()
+
+        tbl = np.array(tbl)
+        for row in tbl:
+            G.add_edge(row[0], row[1], weight = 1)
+            
+        thing = sorted(list(nx.pagerank(G).items()), key=lambda article: article[1])
+        thing.reverse()
+        return HttpResponse(str(time.time() - start))
 
 class SRFView(ListView):
     model = Article
@@ -59,6 +86,8 @@ class SRFView(ListView):
         titles = []
         relates = {}
         kids = {}
+        seealsodict = {}
+
         mydir = './static/text/'
         filelist = [f for f in os.listdir(mydir)]
         nonefile = open(mydir + 'none.txt', 'w+')
@@ -77,6 +106,39 @@ class SRFView(ListView):
                     file.write(string)
                     titles.append(e.title)
                     e.save()
+                # tbl = graph.run("match (a:Article {title: \"%s\"}) - [:see_also] -> (b:Article) return b.title limit 10" %e.title).to_table()
+                # tbl = np.array(tbl)
+                # seealsofile = open(mydir + 'seealso' +'_'.join(e.title.replace('(', '').replace(')', '').replace('/', '').split()) + '.txt', 'w+')
+                # if tbl.shape[0]:
+                #     tbl = tbl[:,0]
+                #     catstring = ''
+                #     for item in tbl:
+                #         catstring = catstring + "<div id = \"" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split())  + "\" style = \"left: 4.5%; position: relative;\">\n"
+                #         catstring = catstring + "<p> <b>" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + " </b> </p>\n"
+                #         catstring = catstring + "<div id = 'selector' style=\"top: 0%; height: 4.5%; width: 30%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;\">\n"
+                #         catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
+                #         catstring = catstring + '<input type="hidden" name="title" value="' + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '"/>\n'
+                #         catstring = catstring + "<button type=\"submit\" class = 'haha' style = \" background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; right: 8%; position: absolute; text-decoration: none; \" onclick = \"current_key = '" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "'; console.log('viewing ' + current_key);\" > View &#8658;</button>\n"
+                #         catstring = catstring + "</form>\n"
+                #         catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"visitrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
+                #         catstring = catstring + '<input type="hidden" name="title" value="' + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '"/>\n'
+                #         catstring = catstring + "<button type=\"submit\" class = 'haha' style = \" background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 8%; position: absolute; text-decoration: none; \" onclick = \"current_key = '" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "'; console.log('viewing ' + current_key);\" > Visit </button>\n"
+                #         catstring = catstring + "</form>\n"
+                #         catstring = catstring + "</div>\n"
+                #         catstring = catstring + "</div>\n"
+                #     seealsofile.write(catstring)
+                #     seealsofile.close()
+                # else:
+                #     seealsofile.write('<div id = "error" style = "text-align: center; vertical-align: middle; line-height: 555px;"> <p> <b> None Available </b> </p> </div>')
+            elif e.categories == 'Seealso':
+                e.title = e.title.replace('(', '').replace(')', '').replace('/', '')
+                e.abstract = e.abstract.replace('(', '').replace(')', '').replace('/', '')
+                if e.title not in seealsodict:
+                    seealsodict[e.title] = [e.abstract]
+                else:
+                    seealsodict[e.title].append(e.abstract)
+                e.save()
+
             elif e.categories == 'Related':
                 
 
@@ -135,6 +197,38 @@ class SRFView(ListView):
                 catfile.write('<div id = "error" style = "text-align: center; vertical-align: middle; line-height: 555px;"> <p> <b> None Available </b> </p> </div>')
                 catfile.close()
 
+            if t in seealsodict:
+                print(t)
+                seealsofile = open(mydir + 'seealso' + '_'.join(t.replace('(', '').replace(')', '').replace('/', '').split()) + '.txt', 'w+')
+                catstring = ""
+                for item in seealsodict.get(t):
+                    catstring = catstring + "<div id = \"" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split())  + "\" style = \"left: 4.5%; position: relative;\">\n"
+                    catstring = catstring + "<p> <b>" + ' '.join(item.split('_')) + " </b> </p>\n"
+                    catstring = catstring + "<div id = 'selector' style=\"top: 0%; height: 4.5%; width: 30%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;\">\n"
+                    catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"viewalso_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
+                    catstring = catstring + '<input type="hidden" name="title" value="' + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '"/>\n'
+                    catstring = catstring + "<button type=\"submit\" class = 'haha' style = \" background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; right: 8%; position: absolute; text-decoration: none; \" onclick = \"current_key = '" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "'; console.log('viewing ' + current_key);\" > View &#8658;</button>\n"
+                    catstring = catstring + "</form>\n"
+                    catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"visitalso_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
+                    catstring = catstring + '<input type="hidden" name="title" value="' + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '"/>\n'
+                    catstring = catstring + "<button type=\"submit\" class = 'haha' style = \" background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 8%; position: absolute; text-decoration: none; \" onclick = \"current_key = '" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "'; console.log('viewing ' + current_key);\" > Visit </button>\n"
+                    catstring = catstring + "</form>\n"
+                    catstring = catstring + "</div>\n"
+                    catstring = catstring + "</div>\n"
+                    with open(mydir + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '.txt', 'w+') as file:
+                        string = "<iframe src=" + "\"https://en.m.wikipedia.org/wiki/"  + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\" width=\"100%\" height=\"100%\" style = \"border:0;\"></iframe>"
+                        file.write(string)
+                seealsofile.write(catstring)
+                
+
+            else:
+                seealsofile = open(mydir + 'seealso' + '_'.join(t.replace('(', '').replace(')', '').replace('/', '').split()) + '.txt', 'w+')
+                seealsofile.write('<div id = "error" style = "text-align: center; vertical-align: middle; line-height: 555px;"> <p> <b> None Available </b> </p> </div>')
+            
+            seealsofile.close()
+                
+
+
         for key in relates:
             catfile = open(mydir + 'related' + key + '.txt', 'w+')
             catstring = ""
@@ -142,7 +236,7 @@ class SRFView(ListView):
                 if item in titles:
                     continue
                 catstring = catstring + "<div id = \"" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split())  + "\" style = \"left: 4.5%; position: relative;\">\n"
-                catstring = catstring + "<p> <b>" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + " </b> </p>\n"
+                catstring = catstring + "<p> <b>" + ' '.join(item.split('_')) + " </b> </p>\n"
                 catstring = catstring + "<div id = 'selector' style=\"top: 0%; height: 4.5%; width: 60%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;\">\n"
                 catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
                 print("<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n")
@@ -165,10 +259,10 @@ class SRFView(ListView):
                 if item in titles:
                     continue
                 catstring = catstring + "<div id = \"" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split())  + "\" style = \"left: 4.5%; position: relative;\">\n"
-                catstring = catstring + "<p> <b>" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + " </b> </p>\n"
-                catstring = catstring + "<div id = 'selector' style=\"top: 0%; height: 4.5%; width: 60%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;\">\n"
+                catstring = catstring + "<p> <b>" + ' '.join(item.split('_')) + " </b> </p>\n"
+                catstring = catstring + "<div id = 'selector' style=\"top: 0%; height: 4.5%; width: 30%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;\">\n"
                 catstring = catstring + "<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n"
-                print("<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n")
+                # print("<form action=\"javascript:void(0);\" method=\"post\" id = \"viewrelate_" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "\">\n")
                 catstring = catstring + '<input type="hidden" name="title" value="' + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + '"/>\n'
                 catstring = catstring + "<button type=\"submit\" class = 'haha' style = \" background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; right: 8%; position: absolute; text-decoration: none; \" onclick = \"current_key = '" + '_'.join(item.replace('(', '').replace(')', '').replace('/', '').split()) + "'; console.log('viewing ' + current_key);\" > View &#8658;</button>\n"
                 catstring = catstring + "</form>\n"
@@ -320,7 +414,18 @@ class SRView(ListView):
             # for match in lst:
             #     article.abstract = article.abstract.replace(match, "<span style = \"color: purple\">%s</span>" % match)
             article.save()
-
+        search_extract = np.array(search_list)[:,0]
+        string = '["' + '", "'.join(search_extract) + '"]'
+        print('match (a:Article) -[:see_also] -> (b:Article) where a.title in %s return a.title, b.title' % string)
+        tbl = graph.run('match (a:Article) -[:see_also] -> (b:Article) where a.title in %s return a.title, b.title' % string).to_table()
+        tbl = np.array(tbl)
+        for row in tbl:
+            article = Article()
+            article.title = row[0]
+            article.abstract = row[1]
+            article.categories = 'Seealso'
+            article.save()
+        
         for i in related_list:
             article = Article()
             article.title = i[0]
@@ -515,6 +620,7 @@ def generate(vectorizer, clf, ics, cis, id_abstract_pair, title_id_pair, id_titl
     # start = time.time()
 # old code ends...... redefined things in here.
 # Databases
+
     print('checkpoint 5: time', time.time() - start)
     start = time.time()
 

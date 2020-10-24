@@ -34,13 +34,17 @@
     .navi:hover{
       background-color: pink;
     }
+
+    .selector:hover{
+      background-color: blue;
+    }
   </style>
 
 <div class="topnav" style = "overflow: hidden; background-color: #13294B; top: 0; width:100%;">
   <a href="" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">&#8656; Back to Index Page</a>
   <a href="/nodes" style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;"> Go to Network View &#8658;</a>
     <div class="topnav-right" style = "float: right;">
-    <a style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">October 15<sup>th</sup>, 2020</a>
+    <a style = "color: white; float: left; color: #f2f2f2; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;">October 19<sup>th</sup>, 2020</a>
   </div>
 
 
@@ -139,21 +143,21 @@
 </script>
 
 <div style = "width: 100%; height: 100%; position: absolute;">
-  <div class = "container" id = "firstlayer" style = "float: left; width: 22%;">
+  <div class = "container" id = "firstlayer" style = "float: left; width: 30%; height:100%;">
     <div class="topnav" style = "overflow: hidden; background-color:#6699cc; top: 0; width:100%;">
       <div class="topnav-left" style = "float: left;">
         <a style = "font-family: Arial; color: white; float: left; text-align: center; padding: 11px 13px; text-decoration: none; font-size: 14px;">Similar Articles</a>
       </div>
     </div>
 
-    <div id = "flvscroll" class = "scroll" style = "height: 555px; overflow-y: scroll;">
+    <div id = "flvscroll" class = "scroll" style = "height: 100%; overflow-y: scroll;">
 
       {% for article in object_list %}
         {% if article.categories == "Article" %}
 
           <script> article_count = article_count + 1; </script>
       <!-- <li style="font-family: Arial;"> -->
-       <div id = "{{ article.title }}" style = "left: 4.5%; position: relative;">
+       <div id = "{{ article.title }}" style = "left: 3.5%; position: relative;">
         <p> <b> {{ article.title }} </b> </p>
       <!-- </li> -->
             <script>
@@ -165,14 +169,17 @@
                       what();
                       function what(){
                            document.getElementById("prevpage").innerHTML = "<iframe src=" + "https://en.m.wikipedia.org/wiki/" + title.replace(/ /g, "_") + " width=\"100%\" height=\"100%\" style = \"border:0;\"></iframe>";
-                           document.getElementById("catlist");
+                           // document.getElementById("catlist");
                       };
                   }
               }
             </script>
 
-            <div id = 'selector' style="top: 0%; height: 4.5%; width: 65%; background-color: #00cc00; position: relative; border-radius: 15px 50px 30px;">
+            <div id = 'activelbl_{{ article.title.split|join:"_"}}' style = 'display: none; border-color:black; border-width: medium; top: 0%; height: 3.5%; width: 20%; background-color: #800000; position:relative;'>
+              <p style = 'text-align: center; vertical-align: middle; top: 15%;  color: white; position: relative; '> Selected </p>
+            </div>
 
+            <div class = "select" id = 'selector' style="top: 0%; height: 3.5%; width: 80%; background-color: #00cc00; position: relative;">
 
               <script>
                 console.log('#view_{{ article.title.split|join:"_"}}')
@@ -181,7 +188,7 @@
 
                   current_key = '{{ article.title }}';
                   var wikipage = "{% static "" %}text/{{ article.title.split|join:"_" }}.txt";
-                  var catlist = "{% static "" %}text/catlist{{ article.title.split|join:"_" }}.txt";
+                  // var catlist = "{% static "" %}text/catlist{{ article.title.split|join:"_" }}.txt";
                   var kidslist = "{% static "" %}text/kids{{ article.title.split|join:"_" }}.txt"
                   console.log(kidslist);
                   $.ajax({
@@ -193,11 +200,71 @@
                      },
                      success:function(data) {
                                              $('#prevpage').load(wikipage);
-                                             $('#catlist').load(catlist);
+                                             // $('#catlist').load(catlist);
                                              $('#relatelist').load(kidslist);
+                                             $('[id^=activelbl_]').hide();
+                                             $('#activelbl_{{ article.title.split|join:"_"}}').show();
                                              console.log('loads', wikipage);
-                                             console.log('loads', catlist);
+                                             // console.log('loads', catlist);
                                              console.log('loads', kidslist);
+                                             }
+                  })
+                  console.log('clicked ', current_key);
+                });
+                console.log('done', current_key);
+
+                console.log('#seealso_{{ article.title.split|join:"_"}}')
+                $(document).on('submit', '#seealso_{{ article.title.split|join:"_" }}', function(e){
+                  e.preventDefault();
+
+                  current_key = '{{ article.title }}';
+                  var wikipage = "{% static "" %}text/{{ article.title.split|join:"_" }}.txt";
+                  // var catlist = "{% static "" %}text/catlist{{ article.title.split|join:"_" }}.txt";
+                  var seealsolist = "{% static "" %}text/seealso{{ article.title.split|join:"_" }}.txt";
+                  $.ajax({
+                     type: 'POST',
+                     url: '/process',
+                     data: {
+                       csrfmiddlewaretoken: '{{ csrf_token }}',
+                       title: encodeURIComponent('{{ article.title }}'),
+                     },
+                     success:function(data) {
+                                             $('#prevpage').load(wikipage);
+                                             // $('#catlist').load(catlist);
+                                             $('#relatelist').load(seealsolist);
+                                             $('[id^=activelbl_]').hide();
+                                             $('#activelbl_{{ article.title.split|join:"_"}}').show();
+                                             console.log('loads', wikipage);
+                                             // console.log('loads', catlist);
+                                             console.log('loads', seealsolist);
+                                             }
+                  })
+                  console.log('clicked ', current_key);
+                });
+                console.log('done', current_key);
+
+                $(document).on('submit', '#pagerank_{{ article.title.split|join:"_" }}', function(e){
+                  e.preventDefault();
+
+                  current_key = '{{ article.title }}';
+                  var wikipage = "{% static "" %}text/{{ article.title.split|join:"_" }}.txt";
+                  // var catlist = "{% static "" %}text/catlist{{ article.title.split|join:"_" }}.txt";
+                  var seealsolist = "{% static "" %}text/seealso{{ article.title.split|join:"_" }}.txt";
+                  $.ajax({
+                     type: 'POST',
+                     url: '/process',
+                     data: {
+                       csrfmiddlewaretoken: '{{ csrf_token }}',
+                       title: encodeURIComponent('{{ article.title }}'),
+                     },
+                     success:function(data) {
+                                             $('#prevpage').load(wikipage);
+                                             // $('#relatelist').load(seealsolist);
+                                             console.log(data)
+                                             $('[id^=activelbl_]').hide();
+                                             $('#activelbl_{{ article.title.split|join:"_"}}').show();
+                                             console.log('loads', wikipage);
+                                             // console.log('loads', seealsolist);
                                              }
                   })
                   console.log('clicked ', current_key);
@@ -221,8 +288,10 @@
                      success:function(data) {
                                              console.log('success');
                                              location.href = "folder";
-                                             $('#wait').hide();
                                              $('#loading').hide();
+                                             setTimeout(function(){// wait for 5 secs(2)
+                                                location.reload(); // then reload the page.(3)
+                                              }, 2500);
                                            }
 
                   })
@@ -234,12 +303,22 @@
 
                 <form action="javascript:void(0);" method="post" id = 'visit_{{ article.title.split|join:"_" }}'>{% csrf_token %}
                   <input type="hidden" name="title" value="{{ article.title }}"/>
-                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 8%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('visiting ' + current_key);" > Visit </button>
+                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 0%; width: 25%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('visiting ' + current_key);" > Visit </button>
                 </form>
 
                 <form action="javascript:void(0);" method="post" id = 'view_{{ article.title.split|join:"_" }}'>{% csrf_token %}
                   <input type="hidden" name="title" value="{{ article.title }}"/>
-                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; right: 8%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('viewing ' + current_key);" > View &#8658;</button>
+                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 25%; width: 25%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('viewing ' + current_key);" > Siblings </button>
+                </form>
+
+                <form action="javascript:void(0);" method="post" id = 'seealso_{{ article.title.split|join:"_" }}'>{% csrf_token %}
+                  <input type="hidden" name="title" value="{{ article.title }}"/>
+                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 50%; width: 25%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('viewing ' + current_key);" > See Also </button>
+                </form>
+
+                <form action="javascript:void(0);" method="post" id = 'pagerank_{{ article.title.split|join:"_" }}'>{% csrf_token %}
+                  <input type="hidden" name="title" value="{{ article.title }}"/>
+                  <button type="submit" id = "{{ article.title }}-visit" style = " background: transparent; border: none; color: white; float: left; color: #f2f2f2; text-align: center; top: 20%; left: 75%; width: 25%; position: absolute; text-decoration: none; " onclick = "current_key = '{{ article.title }}'; console.log('viewing ' + current_key);" > Page Rank </button>
                 </form>
 
             </div>
@@ -257,8 +336,7 @@
       </script>
   </div>
 
-
-  <div class = "container" id = "secondlayer" style = "float: left; width: 28%;">
+  <!-- <div class = "container" id = "secondlayer" style = "float: left; width: 28%;">
     <div class="topnav" style = "overflow: hidden; background-color:#6699cc; top: 0; width:100%;">
       <div class="topnav-left" style = "float: left;">
         <a style = "font-family: Arial; color: white; float: left; text-align: center; padding: 11px 13px; text-decoration: none; font-size: 14px;"> Categories </a>
@@ -312,7 +390,7 @@
     </div>
 
     </div>
-  </div>
+  </div> -->
 
       {% for article in object_list %}
 
@@ -323,7 +401,7 @@
         $(document).on('submit', '#viewcat_{{ article.submitter }}', function(e){
           e.preventDefault();
 
-          current_cat = '{{ article.submitter }}';
+          // current_cat = '{{ article.submitter }}';
           var wikipage = "{% static "" %}text/cat_{{ article.submitter }}.txt";
           var relatelist = "{% static "" %}text/related{{ article.submitter }}.txt"
           $.ajax({
@@ -335,14 +413,14 @@
              },
              success:function(data) {
                                      // console.log(wikipage);
-                                     console.log(catlist);
+                                     // console.log(catlist);
                                      $('#prevpage').load(wikipage);
                                      $('#relatelist').load(relatelist);
                                      }
           })
-          console.log('clicked ', current_cat);
+          // console.log('clicked ', current_cat);
         });
-        console.log('done', current_cat);
+        // console.log('done', current_cat);
       </script>
 
     <script>
@@ -361,7 +439,7 @@
            },
            success:function(data) {
                                    // console.log(wikipage);
-                                   console.log(catlist);
+                                   // console.log(catlist);
                                    $('#prevpage').load(wikipage);
                                    }
         })
@@ -388,7 +466,7 @@
                                    $('#loading').hide();
                                    setTimeout(function(){// wait for 5 secs(2)
                                       location.reload(); // then reload the page.(3)
-                                    }, 1500);
+                                    }, 2500);
                                    // location.href = "/folder";
                                  }
 
@@ -413,7 +491,7 @@
            },
            success:function(data) {
                                    // console.log(wikipage);
-                                   console.log(catlist);
+                                   // console.log(catlist);
                                    $('#prevpage').load(wikipage);
                                    }
         })
@@ -424,18 +502,75 @@
     {% endfor %}
 
 
+
   <script>
     cats = [];
-    console.log(current_cat);
+    // console.log(current_cat);
     relates = [];
    </script>
 
+   {% for article in object_list %}
+
+     {% if article.categories == "Seealso" %}
+     <script>
+     $(document).on('submit', '#viewalso_{{ article.abstract.split|join:"_" }}', function(e){
+       e.preventDefault();
+
+       var wikipage = "{% static "" %}text/{{ article.abstract.split|join:"_" }}.txt";
+
+       $.ajax({
+          type: 'POST',
+          url: '/process',
+          data: {
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            title: encodeURIComponent('{{ article.abstract }}'),
+          },
+          success:function(data) {
+                                  // console.log(wikipage);
+                                  // console.log(catlist);
+                                  $('#prevpage').load(wikipage);
+                                  }
+       })
+     });
+
+     $(document).on('submit', '#visitalso_{{ article.abstract.split|join:"_" }}', function(e){
+       console.log('visit request received!');
+       $('#wait').show();
+       $('#loading').show();
+       e.preventDefault();
+
+       $.ajax({
+          type: 'GET',
+          url: '/search',
+          data: {
+            q: '{{ article.abstract }}',
+            f: ft,
+            l: 'add',
+          },
+          success:function(data) {
+                                  console.log('success');
+                                  // location.href = "folder";
+                                  // $('#wait').hide();
+                                  $('#loading').hide();
+                                  setTimeout(function(){// wait for 5 secs(2)
+                                     location.reload(); // then reload the page.(3)
+                                   }, 2500);
+                                  // location.href = "/folder";
+                                }
+
+       })
+
+     });
+     </script>
+     {% endif %}
+
+  {% endfor %}
 
 
-  <div class = "container" id = "thirdlayer" style = "float: left; width: 20%;">
+  <div class = "container" id = "thirdlayer" style = "float: left; width: 35%; height: 100%">
     <div class="topnav" style = "overflow: hidden; background-color:#6699cc; top: 0; width:100%;">
       <div class="topnav-left" style = "float: left;">
-        <a style = "font-family: Arial; color: white; float: left; text-align: center; padding: 11px 13px; text-decoration: none; font-size: 14px;"> Related Articles </a>
+        <a style = "font-family: Arial; color: white; float: left; text-align: center; padding: 11px 13px; text-decoration: none; font-size: 14px;"> Articles </a>
       </div>
     </div>
 
@@ -448,18 +583,18 @@
       {% for article in object_list %}
         {% if article.categories == "Related" %}
           <script>
-            if (current_cat == "{{ article.submitter }}"){
-              if (!relates.includes("{{ article.title.split|join:"_" }}")){
-                relates.push("{{ article.title.split|join:"_" }}");
-                console.log("{{ article.title.split|join:"_" }}");
-              }
-            }
+            // if (current_cat == "{{ article.submitter }}"){
+            //   if (!relates.includes("{{ article.title.split|join:"_" }}")){
+            //     relates.push("{{ article.title.split|join:"_" }}");
+            //     console.log("{{ article.title.split|join:"_" }}");
+            //   }
+            // }
             </script>
             {% endif %}
           {% endfor %}
 
         <div id = "relatelist">
-            <script>
+            <!-- <script>
             var idx;
             var string = "";
             if (relates.length > 0){
@@ -487,7 +622,8 @@
               string = '<div id = "error" style = "text-align: center; vertical-align: middle; line-height: 555px;"> <p> <b> None Available </b> </p> </div>';
             }
             document.write(string);
-            </script>
+            </script> -->
+            <div id = "prompt" style = "text-align: center; vertical-align: middle; line-height: 555px;"> <p> <b> Please select articles from different categories </b> </p> </div>
         </div>
 
     </div>
@@ -495,7 +631,7 @@
    </div>
 
 
-  <div class = "container" id = "preview" style = "float: left; width: 30%; height: 550px;">
+  <div class = "container" id = "preview" style = "float: left; width: 35%; height: 100%;">
     <div class="topnav" style = "overflow: hidden; background-color:#6699cc; top: 0; width:100%;">
       <div class="topnav-left" style = "float: left;">
         <a style = "font-family: Arial; color: white; float: left; text-align: center; padding: 11px 13px; text-decoration: none; font-size: 14px;"> Preview </a>
